@@ -1,90 +1,164 @@
+# String Analyzer Service
 
-String Analyzer Service
-A RESTful API built with Node.js and Express that analyzes strings and stores their computed properties.
+A RESTful API built with Node.js and Express for analyzing strings and storing their computed properties.
 
+## Features
 
- Features
+For each analyzed string, the service computes and stores:
 
-Analyze a string and compute:Length
-Palindrome check (case-insensitive)
-Unique character count
-Word count
-SHA-256 hash
-Character frequency map
-Store and retrieve analyzed strings
-Filter strings using query parameters
-Natural language filtering
-Delete strings
+- `length`: Number of characters in the string
+- `is_palindrome`: Boolean indicating if the string reads the same forwards and backwards (case-insensitive)
+- `unique_characters`: Count of distinct characters in the string
+- `word_count`: Number of words separated by whitespace
+- `sha256_hash`: SHA-256 hash of the string for unique identification
+- `character_frequency_map`: Object mapping each character to its occurrence count
 
+## Endpoints
 
- Tech Stack
+### 1. Create/Analyze String
 
-Node.js
-Express.js
-In-memory data store (JavaScript object)
+**POST** `/strings`
 
-
- Project Structure
-string-analyzer/
-├── controllers/
-│   └── stringController.js
-├── routes/
-│   └── stringRoutes.js
-├── services/
-│   └── analyzer.js
-├── models/
-│   └── stringStore.js
-├── app.js
-├── server.js
-└── package.json
-
-
-
-
- Setup Instructions
-1. Clone the Repository
-git clone https://github.com/your-username/string-analyzer.git
-cd string-analyzer
-
-
-2. Install Dependencies
-npm install
-
-
-3. Run the Server
-# For development
-yarn dev
-# Or
-npm run dev
-
-# For production
-npm start
-
-
-
-
- API Endpoints
-1. POST /strings
-Analyze and store a string.
+**Request Body:**
+```json
 {
   "value": "string to analyze"
 }
+```
 
+**Success Response (201 Created):**
+```json
+{
+  "id": "sha256_hash_value",
+  "value": "string to analyze",
+  "properties": {
+    "length": 16,
+    "is_palindrome": false,
+    "unique_characters": 12,
+    "word_count": 3,
+    "sha256_hash": "abc123...",
+    "character_frequency_map": {
+      "s": 2,
+      "t": 3,
+      "r": 2
+    }
+  },
+  "created_at": "2025-08-27T10:00:00Z"
+}
+```
 
-2. GET /strings/:string_value
-Retrieve a specific analyzed string.
-3. GET /strings
-Retrieve all strings with optional filters:
+**Error Responses:**
+- `409 Conflict`: String already exists
+- `400 Bad Request`: Missing or invalid "value"
+- `422 Unprocessable Entity`: "value" must be a string
 
-is_palindrome
-min_length
-max_length
-word_count
-contains_character
-4. GET /strings/filter-by-natural-language?query=...
-Parse natural language queries like:
+---
 
-"all single word palindromic strings"
-"strings longer than 10 characters"
-5. DELETE /strings/:string_value
-Delete a specific string.
+### 2. Get Specific String
+
+**GET** `/strings/{string_value}`
+
+**Success Response (200 OK):** Same as above
+
+**Error Response:**
+- `404 Not Found`: String not found
+
+---
+
+### 3. Get All Strings with Filtering
+
+**GET** `/strings?is_palindrome=true&min_length=5&max_length=20&word_count=2&contains_character=a`
+
+**Success Response (200 OK):**
+```json
+{
+  "data": [ /* matching strings */ ],
+  "count": 15,
+  "filters_applied": {
+    "is_palindrome": true,
+    "min_length": 5,
+    "max_length": 20,
+    "word_count": 2,
+    "contains_character": "a"
+  }
+}
+```
+
+**Error Response:**
+- `400 Bad Request`: Invalid query parameters
+
+---
+
+### 4. Natural Language Filtering
+
+**GET** `/strings/filter-by-natural-language?query=all%20single%20word%20palindromic%20strings`
+
+**Success Response (200 OK):**
+```json
+{
+  "data": [ /* matching strings */ ],
+  "count": 3,
+  "interpreted_query": {
+    "original": "all single word palindromic strings",
+    "parsed_filters": {
+      "word_count": 1,
+      "is_palindrome": true
+    }
+  }
+}
+```
+
+**Error Responses:**
+- `400 Bad Request`: Unable to parse query
+- `422 Unprocessable Entity`: Conflicting filters
+
+---
+
+### 5. Delete String
+
+**DELETE** `/strings/{string_value}`
+
+**Success Response (204 No Content)**
+
+**Error Response:**
+- `404 Not Found`: String not found
+
+---
+
+## Setup Instructions
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/your-username/string-analyzer.git
+cd string-analyzer
+```
+
+### 2. Install Dependencies
+```bash
+npm install
+```
+
+### 3. Run the Server
+```bash
+npm run dev
+```
+
+### 4. Environment Variables
+No environment variables required for in-memory version.
+
+---
+
+## Testing
+
+Use Postman or cURL to test the endpoints. Ensure all responses match the expected format.
+
+---
+
+## Dependencies
+
+- express
+- body-parser
+- crypto
+- nodemon (dev)
+
+---
